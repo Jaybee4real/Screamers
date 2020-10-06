@@ -7,7 +7,10 @@ firebase.initializeApp(config);
 const {
   validateSignupData,
   validateLoginData,
+  reduceUserDetails,
 } = require("../utilities/validators");
+
+////////////Sign a user up/////////
 
 exports.signUp = (req, res) => {
   const newUser = {
@@ -64,6 +67,7 @@ exports.signUp = (req, res) => {
     });
 };
 
+//////Login User///////
 exports.logIn = (req, res) => {
   const user = {
     email: req.body.email,
@@ -93,6 +97,23 @@ exports.logIn = (req, res) => {
     });
 };
 
+
+////////Update User Details//////////
+exports.addUserDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body);
+  db.doc(`/users/${req.user.userHandle}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: "Details added successfully" });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error:  err.code });
+    });
+};
+
+
+//////Upload a profile Image of a user///////
 exports.uploadImage = (req, res) => {
   const BusBoy = require("busboy");
   const path = require("path");
@@ -106,8 +127,8 @@ exports.uploadImage = (req, res) => {
 
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
     ///////Handle bad image files Extension//////
-    if(mimetype !== "image/jpeg" && mimetype !== "image/png"){
-      return res.status(400).json({error : "Wrong File Type Submitted"})
+    if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
+      return res.status(400).json({ error: "Wrong File Type Submitted" });
     }
     ///////////////////
 
@@ -115,7 +136,7 @@ exports.uploadImage = (req, res) => {
     imageFileName = `${Math.round(
       Math.random() * 100000000000
     )}.${imageExtension}`;
-  
+
     const filepath = path.join(os.tmpdir(), imageFileName);
     imageToBeUploaded = { filepath, mimetype };
     file.pipe(fs.createWriteStream(filepath));
@@ -141,13 +162,11 @@ exports.uploadImage = (req, res) => {
         return res.json({ message: "image uploaded successfully" });
       })
       .catch((err) => {
-        return res
-          .status(500)
-          .json({
-            error:
-              "This is an error from the upload part of the code" + err.code,
-          });
+        return res.status(500).json({
+          error: err.code,
+        });
       });
   });
   busboy.end(req.rawBody);
 };
+
