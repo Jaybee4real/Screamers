@@ -9,6 +9,7 @@ const {
   validateLoginData,
   reduceUserDetails,
 } = require("../utilities/validators");
+const { user } = require("firebase-functions/lib/providers/auth");
 
 ////////////Sign a user up/////////
 
@@ -112,6 +113,31 @@ exports.addUserDetails = (req, res) => {
     });
 };
 
+
+/////////////////Get Own User Details
+
+
+exports.getAuthenticatedUser = (req, res) => {
+  let userData = {}
+  db.doc(`/users/${req.user.userHandle}`).get()
+  .then(doc => {
+    if (doc.exists){
+      userData.credentials = doc.data()
+      return db.collection("likes").where("userHandle", "==", req.user.userHandle).get()
+    }
+  })
+  .then(data => {
+    userData.likes = []
+    data.forEach(doc => {
+      userData.likes.push(doc.data())
+    })
+    return res.json(userData)
+  })
+  .catch(err => {
+    console.error(err)
+    return res.status(500).json({error : err.code})
+  })
+}
 
 //////Upload a profile Image of a user///////
 exports.uploadImage = (req, res) => {
