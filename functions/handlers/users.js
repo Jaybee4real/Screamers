@@ -99,7 +99,7 @@ exports.logIn = (req, res) => {
 };
 
 
-////////Update User Details//////////
+////////////Update User Details//////////
 exports.addUserDetails = (req, res) => {
   let userDetails = reduceUserDetails(req.body);
   db.doc(`/users/${req.user.userHandle}`)
@@ -114,9 +114,7 @@ exports.addUserDetails = (req, res) => {
 };
 
 
-/////////////////Get Own User Details
-
-
+//////////////Get Own User Details//////////
 exports.getAuthenticatedUser = (req, res) => {
   let userData = {}
   db.doc(`/users/${req.user.userHandle}`).get()
