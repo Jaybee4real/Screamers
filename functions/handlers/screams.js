@@ -36,6 +36,8 @@ exports.postOneScream = (req, res) => {
       console.err(err);
     });
 };
+
+//////get One Scream
 exports.getOneScream = (req, res) => {
   let screamData = {};
   db.doc(`/screams/${req.params.screamId}`)
@@ -62,4 +64,36 @@ exports.getOneScream = (req, res) => {
       console.log(err);
       res.status(500).json({ err: err.code });
     });
+};
+
+////////Comment On Scream
+
+exports.commentOnScream = (req, res) => {
+  if (req.body.body.trim() == "")
+    return res.status(400).json({ error: "Must Not BE Empty" });
+  else {
+    const newComment = {
+      body: req.body.body,
+      createdAt: new Date().toISOString(),
+      screamId: req.params.screamId,
+      userHandle: req.user.userHandle,
+      userImage: req.user.imageUrl,
+    };
+
+    db.doc(`screams/${req.params.screamId}`)
+      .get()
+      .then((doc) => {
+        if (!doc.exists) {
+          return res.status(404).json({ error: "Scream Not Found" });
+        }
+        return db.collection("comments").add(newComment);
+      })
+      .then(() => {
+        res.json(newComment);
+      })
+      .catch((err) => {
+        console.error(err + "error, from catch");
+        res.status(500).json({ error: "Something went wrong" + err });
+      });
+  }
 };
