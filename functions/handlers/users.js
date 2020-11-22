@@ -109,32 +109,81 @@ exports.addUserDetails = (req, res) => {
     })
     .catch((err) => {
       console.error(err);
-      return res.status(500).json({ error:  err.code });
+      return res.status(500).json({ error: err.code });
     });
 };
 
+////////Get Any Users Details///////
+exports.getUserDetails = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.params.handle}`).get()
+    .then(doc => {
+      if (doc.exists) {
+        userData.user = doc.data()
+        return db.collection("screams").where("userHandle", "==", req.params.handle).orderBy("createdAt", "desc").get()
+          .then(data => {
+            userData.screams = []
+            data.forEach(doc => {
+              userData.screams.push({
+                body: doc.data().body,
+                userHandle: doc.data().userHandle,
+                createdAt: doc.data().createdAt,
+                userImage: doc.data().userImage,
+                likeCount: doc.data().likeCount,
+                commentCount: doc.data().commentCount,
+                screamId: doc.id
+              })
+            })
+            return res.json({ userData })
+          })
+          .catch(err => {
+            console.error(err)
+            return res.status(500).json({ error: err.code + err  })
+          })
+      }
+      else {
+        return res.status(404).json({error: "User Not Found"})
+      }
+    })
+}
 
 //////////////Get Own User Details//////////
 exports.getAuthenticatedUser = (req, res) => {
+  console.log("Boooom")
   let userData = {}
   db.doc(`/users/${req.user.userHandle}`).get()
-  .then(doc => {
-    if (doc.exists){
-      userData.credentials = doc.data()
-      return db.collection("likes").where("userHandle", "==", req.user.userHandle).get()
-    }
-  })
-  .then(data => {
-    userData.likes = []
-    data.forEach(doc => {
-      userData.likes.push(doc.data())
+    .then(doc => {
+      if (doc.exists) {
+        userData.credentials = doc.data()
+        return db.collection("likes").where("userHandle", "==", req.user.userHandle).get()
+      }
     })
-    return res.json(userData)
-  })
-  .catch(err => {
-    console.error(err)
-    return res.status(500).json({error : err.code})
-  })
+    .then(data => {
+      userData.likes = []
+      data.forEach(doc => {
+        userData.likes.push(doc.data())
+      })
+      return db.collection("notifications").where("recipient", "==", req.user.userHandle).orderBy("createdAt", "desc").get()
+        .then(data => {
+          userData.notificatons = []
+          data.forEach(doc => {
+            userData.notificatons.push({
+              recipient: doc.data().recipient,
+              sender: doc.data().sender,
+              createdAt: doc.data().createdAt,
+              screamId: doc.data().screamId,
+              type: doc.data().type,
+              read: doc.data().read,
+              notificatonId: doc.id,
+            })
+          })
+          return res.json({ userData })
+        })
+    })
+    .catch(err => {
+      console.error(err)
+      return res.status(500).json({ error: err.code + err })
+    })
 }
 
 //////Upload a profile Image of a user///////
@@ -194,3 +243,21 @@ exports.uploadImage = (req, res) => {
   busboy.end(req.rawBody);
 };
 
+
+exports.markNotificationsRead = (req, res) => {
+  let batch = db.batch()
+  req.body.forEach(notificatonId => { 
+    const notificaton = db.doc(`/notifications/${notificatonId}`)
+    batch.update(notificaton, {
+      read: true
+    })
+  })
+  batch.commit()
+  .then(() => {
+    return res.json({message: "notifications marked read"})
+  })
+  .catch(err => {
+    console.error(err)
+    res.status(500).json({error: err + err.code})
+  })
+} 

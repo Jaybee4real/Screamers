@@ -5,6 +5,19 @@
     },
     "ui": {
       "enabled": true
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "database": {
+      "port": 9000
     }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
